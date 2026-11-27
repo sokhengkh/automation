@@ -127,7 +127,7 @@ async function fetchTransactions() {
           <td>${escapeHtml(tx.categories)}</td>
           <td class="num"><strong>${amtFormatted}</strong></td>
           <td>${escapeHtml(tx.currency)}</td>
-          <td class="wrap">${escapeHtml(tx.description || '-')}</td>
+          <td class="wrap desc-cell">${escapeHtml(tx.description || '-')}</td>
           <td>${escapeHtml(tx.paymentMethod || '-')}</td>
           <td class="wrap">${escapeHtml(tx.location || '-')}</td>
           <td><span class="badge ${tx.syncedToSheet ? 'badge-synced' : 'badge-local'}">${tx.syncedToSheet ? 'Sheet' : 'Local'}</span></td>

@@ -61,6 +61,7 @@ function getOrCreateTransactionsSheet() {
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(HEADERS);
     var headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
+    headerRange.setFontFamily('Kantumruy Pro');
     headerRange.setFontWeight('bold');
     headerRange.setBackground('#0F4C5C');
     headerRange.setFontColor('#FFFFFF');
@@ -110,9 +111,10 @@ function updateSummarySheet(ss, txSheet) {
     ['សមតុល្យ (Net Balance)', usdIncome - usdExpense, khrIncome - khrExpense],
   ];
 
-  summary.getRange(1, 1, rows.length, 3).setValues(rows);
+  summary.getRange(1, 1, rows.length, 3).setValues(rows).setFontFamily('Kantumruy Pro');
   summary.getRange(1, 1, 1, 3).merge().setFontWeight('bold').setFontSize(13).setBackground('#0F4C5C').setFontColor('#FFFFFF');
   summary.getRange(3, 1, 1, 3).setFontWeight('bold').setBackground('#E2E8F0');
+  summary.getRange(4, 1, 3, 1).setFontWeight('bold');
   summary.getRange(4, 2, 3, 1).setNumberFormat('$#,##0.00');
   summary.getRange(4, 3, 3, 1).setNumberFormat('#,##0" ៛"');
   summary.setColumnWidth(1, 240);
@@ -198,7 +200,8 @@ function doPost(e) {
       var rows = Array.isArray(body.rows) ? body.rows : [];
       if (rows.length > 0) {
         var startRow = sheet.getLastRow() + 1;
-        sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
+        var appendRange = sheet.getRange(startRow, 1, rows.length, HEADERS.length);
+        appendRange.setValues(rows).setFontFamily('Kantumruy Pro');
         sheet.getRange(startRow, 1, rows.length, 1).setNumberFormat('@');
         updateSummarySheet(ss, sheet);
       }

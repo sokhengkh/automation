@@ -38,12 +38,13 @@ const THIN_BORDER = {
 
 const USD_FORMAT = '$#,##0.00';
 const KHR_FORMAT = '#,##0" ៛"';
+const EXCEL_FONT = 'Kantumruy Pro';
 
 function styleHeaderRow(row, fill = HEADER_FILL) {
-  row.height = 24;
+  row.height = 26;
   row.eachCell((cell) => {
     cell.fill = fill;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Calibri' };
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: EXCEL_FONT };
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     cell.border = THIN_BORDER;
   });
@@ -68,10 +69,10 @@ function addBreakdownTable(sheet, startRow, title, rows, firstColHeader, keyFiel
     'ចំណូល (៛)',
     'ចំណាយ (៛)',
   ];
-  headRow.height = 22;
+  headRow.height = 24;
   headRow.eachCell((cell) => {
     cell.fill = SUBHEADER_FILL;
-    cell.font = { bold: true, color: { argb: 'FF0F172A' }, size: 10.5 };
+    cell.font = { bold: true, color: { argb: 'FF0F172A' }, size: 10.5, name: EXCEL_FONT };
     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     cell.border = THIN_BORDER;
   });
@@ -81,6 +82,7 @@ function addBreakdownTable(sheet, startRow, title, rows, firstColHeader, keyFiel
     sheet.mergeCells(r, 1, r, 6);
     const emptyRow = sheet.getRow(r);
     emptyRow.getCell(1).value = 'មិនមានទិន្នន័យ (No data)';
+    emptyRow.getCell(1).font = { name: EXCEL_FONT, size: 10.5 };
     emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
     emptyRow.getCell(1).border = THIN_BORDER;
     return r + 2;
@@ -97,9 +99,10 @@ function addBreakdownTable(sheet, startRow, title, rows, firstColHeader, keyFiel
       Math.round(item.khrIncome),
       Math.round(item.khrExpense),
     ];
-    row.height = 20;
+    row.height = 22;
     row.eachCell((cell, colNumber) => {
       if (i % 2 === 1) cell.fill = ZEBRA_FILL;
+      cell.font = { name: EXCEL_FONT, size: 10.5 };
       cell.border = THIN_BORDER;
       cell.alignment = {
         vertical: 'middle',
@@ -143,15 +146,15 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
   summarySheet.mergeCells('A1:F1');
   const banner = summarySheet.getRow(1);
   banner.getCell(1).value = 'របាយការណ៍ចំណូល-ចំណាយ (Income & Expense Monthly Report)';
-  banner.height = 30;
+  banner.height = 32;
   banner.getCell(1).fill = HEADER_FILL;
-  banner.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+  banner.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' }, name: EXCEL_FONT };
   banner.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
   summarySheet.getRow(2).values = ['ខែរបាយការណ៍ (Period):', monthLabel, '', 'កាលបរិច្ឆេទបង្កើត:', getNowDateTimeString(timezone), ''];
-  summarySheet.getRow(2).font = { bold: true, size: 10.5 };
+  summarySheet.getRow(2).font = { bold: true, size: 10.5, name: EXCEL_FONT };
   summarySheet.getRow(3).values = ['ប្រតិបត្តិការសរុប (Total Entries):', summary.count];
-  summarySheet.getRow(3).font = { bold: true, size: 10.5 };
+  summarySheet.getRow(3).font = { bold: true, size: 10.5, name: EXCEL_FONT };
 
   // Section A: Overall KPI Summary
   let rowIdx = 5;
@@ -164,10 +167,10 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
 
   const kpiHead = summarySheet.getRow(rowIdx);
   kpiHead.values = ['បរិយាយ (Metric)', 'ប្រាក់ដុល្លារ USD ($)', 'ប្រាក់រៀល KHR (៛)'];
-  kpiHead.height = 22;
+  kpiHead.height = 24;
   kpiHead.eachCell((cell) => {
     cell.fill = SUBHEADER_FILL;
-    cell.font = { bold: true };
+    cell.font = { bold: true, name: EXCEL_FONT, size: 10.5 };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
     cell.border = THIN_BORDER;
   });
@@ -187,12 +190,12 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
   for (const [label, usdVal, khrVal, color] of kpiRows) {
     const r = summarySheet.getRow(rowIdx);
     r.values = [label, usdVal, khrVal];
-    r.height = 22;
-    r.getCell(1).font = { bold: true };
+    r.height = 24;
+    r.getCell(1).font = { bold: true, name: EXCEL_FONT, size: 10.5 };
     r.getCell(2).numFmt = USD_FORMAT;
     r.getCell(3).numFmt = KHR_FORMAT;
-    r.getCell(2).font = { bold: true, color: { argb: color } };
-    r.getCell(3).font = { bold: true, color: { argb: color } };
+    r.getCell(2).font = { bold: true, color: { argb: color }, name: EXCEL_FONT, size: 10.5 };
+    r.getCell(3).font = { bold: true, color: { argb: color }, name: EXCEL_FONT, size: 10.5 };
     r.eachCell((cell, col) => {
       cell.border = THIN_BORDER;
       cell.alignment = { vertical: 'middle', horizontal: col === 1 ? 'left' : 'right' };
@@ -270,10 +273,11 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
       tx.paymentMethod || '',
       tx.location || '',
     ];
-    r.height = 20;
+    r.height = 22;
 
     r.eachCell((cell, col) => {
       if (i % 2 === 1) cell.fill = ZEBRA_FILL;
+      cell.font = { name: EXCEL_FONT, size: 10.5 };
       cell.border = THIN_BORDER;
       cell.alignment = {
         vertical: 'middle',
@@ -281,7 +285,7 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
         wrapText: col === 6 || col === 8,
       };
       if (col === 2) {
-        cell.font = { bold: true, color: { argb: isIncome ? 'FF15803D' : 'FFB91C1C' } };
+        cell.font = { bold: true, name: EXCEL_FONT, size: 10.5, color: { argb: isIncome ? 'FF15803D' : 'FFB91C1C' } };
       }
       if (col === 4) {
         cell.numFmt = isKhr ? '#,##0' : '#,##0.00';
@@ -302,7 +306,7 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
     '',
     '',
   ];
-  usdFooter.font = { bold: true };
+  usdFooter.font = { bold: true, name: EXCEL_FONT, size: 10.5 };
   usdFooter.getCell(4).numFmt = USD_FORMAT;
 
   const khrFooter = detailSheet.getRow(footerStart + 1);
@@ -316,7 +320,7 @@ export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone
     '',
     '',
   ];
-  khrFooter.font = { bold: true };
+  khrFooter.font = { bold: true, name: EXCEL_FONT, size: 10.5 };
   khrFooter.getCell(4).numFmt = KHR_FORMAT;
 
   const buffer = await workbook.xlsx.writeBuffer();

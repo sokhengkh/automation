@@ -134,6 +134,8 @@ test('excelService: builds 2-sheet Excel workbook with Summary and 8-column Tran
   const detailSheet = wb.getWorksheet('Transactions (លម្អិត)');
   const headers = detailSheet.getRow(1).values.slice(1);
   assert.deepEqual(headers, SHEET_HEADERS);
+  assert.equal(detailSheet.getRow(1).getCell(1).font.name, 'Kantumruy Pro');
+  assert.equal(detailSheet.getRow(1).getCell(1).font.bold, true);
   assert.equal(detailSheet.getRow(2).getCell(4).value, 850);
   assert.equal(detailSheet.getRow(2).getCell(5).value, '$');
   assert.equal(detailSheet.getRow(3).getCell(4).value, 20000);
