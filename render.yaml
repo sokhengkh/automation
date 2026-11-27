@@ -14,7 +14,7 @@ services:
       - key: NGROK_AUTOSTART
         value: "false"
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash-lite
       - key: MONTHLY_REPORT_HOUR
         value: "16"
       - key: MONTHLY_REPORT_MINUTE

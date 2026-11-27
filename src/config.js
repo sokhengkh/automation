@@ -28,7 +28,7 @@ export const config = {
 
   gemini: {
     apiKey: (process.env.GEMINI_API_KEY || '').trim(),
-    model: (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim(),
+    model: (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim(),
   },
 
   ngrok: {

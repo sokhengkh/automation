@@ -154,12 +154,23 @@ export class GeminiService {
   }
 
   async _generateWithFallback(contents, genConfig) {
-    const models = [...new Set([this.model, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'])];
+    const models = [
+      ...new Set([
+        this.model,
+        'gemini-3.5-flash-lite',
+        'gemini-flash-lite-latest',
+        'gemini-3-flash-preview',
+        'gemini-2.5-flash',
+      ]),
+    ];
     let lastError;
 
     for (let i = 0; i < models.length; i += 1) {
       const modelName = models[i];
-      const modelConfig = { ...genConfig };
+      const modelConfig = {
+        httpOptions: { timeout: 15000 },
+        ...genConfig,
+      };
       if (modelName.startsWith('gemini-2.5-') && !modelConfig.thinkingConfig) {
         modelConfig.thinkingConfig = { thinkingBudget: 0 };
       }
@@ -172,16 +183,22 @@ export class GeminiService {
       } catch (err) {
         lastError = err;
         const msg = String(err?.message || err);
-        const isTransient =
+        const isRetryable =
           msg.includes('503') ||
+          msg.includes('504') ||
           msg.includes('429') ||
+          msg.includes('404') ||
           msg.includes('UNAVAILABLE') ||
+          msg.includes('DEADLINE_EXCEEDED') ||
+          msg.includes('NOT_FOUND') ||
           msg.includes('high demand') ||
-          msg.includes('404');
-        if (!isTransient || i === models.length - 1) {
+          msg.includes('fetch failed') ||
+          msg.includes('timeout') ||
+          msg.includes('aborted');
+        if (!isRetryable || i === models.length - 1) {
           throw err;
         }
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 250));
       }
     }
     throw lastError;
