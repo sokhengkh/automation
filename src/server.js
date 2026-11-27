@@ -46,7 +46,7 @@ export function createApp() {
         },
         gemini: {
           configured: geminiService.isConfigured(),
-          model: config.gemini.model,
+          model: geminiService.activeModel || config.gemini.model,
         },
         googleSheet: {
           sheetId: config.googleSheet.sheetId,

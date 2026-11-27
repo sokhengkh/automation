@@ -19,6 +19,7 @@ import {
   summarizeTransactions,
 } from '../src/utils/financeUtils.js';
 import { buildMonthlyExcelBuffer } from '../src/services/excelService.js';
+import { GeminiService, selectBestFlashModels } from '../src/services/geminiService.js';
 import { StorageService } from '../src/services/storageService.js';
 import { createApp } from '../src/server.js';
 
@@ -208,4 +209,46 @@ test('server HTTP endpoints respond cleanly', async () => {
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test('geminiService: auto-discovers and caches live Flash model when older models return 404', async () => {
+  const ranked = selectBestFlashModels([
+    { name: 'models/gemini-2.5-flash-preview-tts', supportedActions: ['generateContent'] },
+    { name: 'models/gemini-3.5-flash-image', supportedActions: ['generateContent'] },
+    { name: 'models/gemini-4.5-flash-lite', supportedActions: ['generateContent'] },
+    { name: 'models/gemini-flash-lite-latest', supportedActions: ['generateContent'] },
+    { name: 'models/gemini-4.5-pro', supportedActions: ['generateContent'] },
+    { name: 'models/gemma-4-31b-it', supportedActions: ['generateContent'] },
+  ]);
+  assert.deepEqual(ranked, ['gemini-flash-lite-latest', 'gemini-4.5-flash-lite']);
+
+  const calls = [];
+  const mockClient = {
+    models: {
+      async list() {
+        return {
+          async *[Symbol.asyncIterator]() {
+            yield { name: 'models/gemini-9.0-flash-lite', supportedActions: ['generateContent'] };
+          },
+        };
+      },
+      async generateContent({ model }) {
+        calls.push(model);
+        if (model === 'gemini-9.0-flash-lite') {
+          return { text: 'OK' };
+        }
+        throw new Error('{"error":{"code":404,"status":"NOT_FOUND"}}');
+      },
+    },
+  };
+
+  const svc = new GeminiService({ apiKey: 'test-key', model: 'gemini-dead-model', client: mockClient });
+  const first = await svc.testConnection();
+  assert.equal(first.ok, true);
+  assert.equal(first.model, 'gemini-9.0-flash-lite');
+
+  calls.length = 0;
+  const second = await svc.testConnection();
+  assert.equal(second.ok, true);
+  assert.deepEqual(calls, ['gemini-9.0-flash-lite']);
 });
