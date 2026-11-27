@@ -60,6 +60,17 @@ export class TelegramService {
     });
   }
 
+  async editMessageText(chatId, messageId, htmlText, extra = {}) {
+    return this.apiCall('editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: htmlText,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+      ...extra,
+    });
+  }
+
   async sendChatAction(chatId, action = 'typing') {
     try {
       await this.apiCall('sendChatAction', { chat_id: chatId, action });
@@ -307,19 +318,6 @@ export class TelegramService {
       syncedToSheet: false,
     });
 
-    let sheetStatusText = '💾 រក្សាទុកក្នុង Local រួចរាល់';
-    try {
-      const syncRes = await sheetsService.appendTransactions(saved);
-      if (syncRes.synced) {
-        sheetStatusText = '📊 កត់ចូល Google Sheet រួចរាល់!';
-      } else {
-        sheetStatusText = '💾 រក្សាទុកក្នុង Local (មិនទាន់ភ្ជាប់ Google Sheet ទេ — សូមមើលការណែនាំភ្ជាប់ Sheet)';
-      }
-    } catch (err) {
-      console.error('[SheetsSyncError]', err);
-      sheetStatusText = `⚠️ រក្សាទុកក្នុង Local រួច តែភ្ជាប់ Google Sheet មានបញ្ហា៖ ${err.message}`;
-    }
-
     const lines = saved.map((tx, i) => {
       const icon = tx.type === 'ចំណូល' ? '🟢' : '🔴';
       const prefix = saved.length > 1 ? `#${i + 1} ` : '';
@@ -335,13 +333,35 @@ export class TelegramService {
         .join('\n');
     });
 
-    const footer = [
-      '',
-      escapeHtml(sheetStatusText),
-      '<i>វាយ /undo បើចង់លុប ឬ /summary ដើម្បីមើលសរុប។</i>',
-    ].join('\n');
+    const buildBody = (statusLine) =>
+      `${lines.join('\n\n')}\n\n${escapeHtml(statusLine)}\n<i>វាយ /undo បើចង់លុប ឬ /summary ដើម្បីមើលសរុប។</i>`;
 
-    await this.sendMessage(chatId, `${lines.join('\n\n')}${footer}`);
+    const sheetMode = await sheetsService.getMode();
+    if (sheetMode === 'local_only') {
+      await this.sendMessage(
+        chatId,
+        buildBody('💾 រក្សាទុកក្នុង Local (មិនទាន់ភ្ជាប់ Google Sheet ទេ)')
+      );
+      return;
+    }
+
+    // Reply immediately after AI parsing, then sync to Google Sheet and update status
+    const sentMsg = await this.sendMessage(chatId, buildBody('⏳ កំពុងបញ្ជូនចូល Google Sheet...'));
+
+    try {
+      const syncRes = await sheetsService.appendTransactions(saved);
+      const finalStatus = syncRes.synced
+        ? '📊 កត់ចូល Google Sheet រួចរាល់!'
+        : '💾 រក្សាទុកក្នុង Local (មិនទាន់ភ្ជាប់ Google Sheet ទេ)';
+      await this.editMessageText(chatId, sentMsg.message_id, buildBody(finalStatus)).catch(() => {});
+    } catch (err) {
+      console.error('[SheetsSyncError]', err);
+      await this.editMessageText(
+        chatId,
+        sentMsg.message_id,
+        buildBody(`⚠️ រក្សាទុកក្នុង Local រួច តែភ្ជាប់ Google Sheet មានបញ្ហា៖ ${err.message}`)
+      ).catch(() => {});
+    }
   }
 
   async handleUpdate(update) {
@@ -370,7 +390,7 @@ export class TelegramService {
       const defaultLocation = await storageService.getRecentLocation(chatId);
 
       if (message.voice || message.audio) {
-        await this.sendChatAction(chatId, 'typing');
+        void this.sendChatAction(chatId, 'typing');
         const mediaObj = message.voice || message.audio;
         const { buffer } = await this.downloadFile(mediaObj.file_id);
         const mimeType = mediaObj.mime_type || 'audio/ogg';
@@ -385,7 +405,7 @@ export class TelegramService {
       }
 
       if (Array.isArray(message.photo) && message.photo.length > 0) {
-        await this.sendChatAction(chatId, 'typing');
+        void this.sendChatAction(chatId, 'typing');
         const largest = message.photo[message.photo.length - 1];
         const { buffer } = await this.downloadFile(largest.file_id);
         const parsed = await geminiService.parseInput({
@@ -399,7 +419,7 @@ export class TelegramService {
       }
 
       if (message.document && String(message.document.mime_type || '').startsWith('image/')) {
-        await this.sendChatAction(chatId, 'typing');
+        void this.sendChatAction(chatId, 'typing');
         const { buffer } = await this.downloadFile(message.document.file_id);
         const parsed = await geminiService.parseInput({
           text: message.caption || '',
@@ -412,7 +432,7 @@ export class TelegramService {
       }
 
       if (text) {
-        await this.sendChatAction(chatId, 'typing');
+        void this.sendChatAction(chatId, 'typing');
         const parsed = await geminiService.parseInput({
           text,
           defaultLocation,

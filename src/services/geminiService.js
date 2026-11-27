@@ -159,11 +159,15 @@ export class GeminiService {
 
     for (let i = 0; i < models.length; i += 1) {
       const modelName = models[i];
+      const modelConfig = { ...genConfig };
+      if (modelName.startsWith('gemini-2.5-') && !modelConfig.thinkingConfig) {
+        modelConfig.thinkingConfig = { thinkingBudget: 0 };
+      }
       try {
         return await this.client.models.generateContent({
           model: modelName,
           contents,
-          config: genConfig,
+          config: modelConfig,
         });
       } catch (err) {
         lastError = err;
