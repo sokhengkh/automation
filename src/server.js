@@ -307,15 +307,18 @@ export function createApp() {
     }
   });
 
-  app.post('/webhook/telegram', (req, res) => {
+  app.post('/webhook/telegram', async (req, res) => {
     const incomingSecret = req.get('x-telegram-bot-api-secret-token') || '';
     if (config.telegram.webhookSecret && incomingSecret !== config.telegram.webhookSecret) {
       return res.status(403).json({ ok: false, error: 'Invalid webhook secret' });
     }
-    res.status(200).json({ ok: true });
-    telegramService.handleUpdate(req.body).catch((err) => {
+    try {
+      await telegramService.handleUpdate(req.body);
+      res.status(200).json({ ok: true });
+    } catch (err) {
       console.error('[WebhookAsyncError]', err);
-    });
+      res.status(200).json({ ok: false });
+    }
   });
 
   return app;

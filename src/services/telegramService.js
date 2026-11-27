@@ -144,13 +144,13 @@ export class TelegramService {
 
     const caption = [
       `📊 <b>របាយការណ៍ចំណូល-ចំណាយប្រចាំខែ ${escapeHtml(formatMonthLabelKhmer(monthKey))}</b>`,
-      `• ប្រតិបត្តិការសរុប៖ <b>${summary.count}</b>`,
-      `• ចំណូល USD៖ <b>${escapeHtml(formatMoney(summary.totals.USD.income, '$'))}</b> | ចំណាយ៖ <b>${escapeHtml(formatMoney(summary.totals.USD.expense, '$'))}</b>`,
-      `• សមតុល្យ USD៖ <b>${escapeHtml(formatMoney(summary.totals.USD.net, '$'))}</b>`,
-      `• ចំណូល KHR៖ <b>${escapeHtml(formatMoney(summary.totals.KHR.income, '៛'))}</b> | ចំណាយ៖ <b>${escapeHtml(formatMoney(summary.totals.KHR.expense, '៛'))}</b>`,
-      `• សមតុល្យ KHR៖ <b>${escapeHtml(formatMoney(summary.totals.KHR.net, '៛'))}</b>`,
-      `📁 មាន ២ Sheets៖ <i>Summary (សរុប)</i> និង <i>Transactions (លម្អិត)</i>`,
-      `<i>ប្រភពទិន្នន័យ៖ ${escapeHtml(source)}</i>`,
+      `- ប្រតិបត្តិការសរុប: <b>${summary.count}</b>`,
+      `- ចំណូល USD: <b>${escapeHtml(formatMoney(summary.totals.USD.income, '$'))}</b> | ចំណាយ: <b>${escapeHtml(formatMoney(summary.totals.USD.expense, '$'))}</b>`,
+      `- សមតុល្យ USD: <b>${escapeHtml(formatMoney(summary.totals.USD.net, '$'))}</b>`,
+      `- ចំណូល KHR: <b>${escapeHtml(formatMoney(summary.totals.KHR.income, '៛'))}</b> | ចំណាយ: <b>${escapeHtml(formatMoney(summary.totals.KHR.expense, '៛'))}</b>`,
+      `- សមតុល្យ KHR: <b>${escapeHtml(formatMoney(summary.totals.KHR.net, '៛'))}</b>`,
+      `📁 មាន ២ Sheets: <i>Summary (សរុប)</i> និង <i>Transactions (លម្អិត)</i>`,
+      `<i>ប្រភពទិន្នន័យ: ${escapeHtml(source)}</i>`,
     ].join('\n');
 
     await this.sendDocument(chatId, buffer, filename, caption);
@@ -180,13 +180,13 @@ export class TelegramService {
         `3️⃣ <b>រូបភាពវិក្កយបត្រ (Receipt Photo)៖</b> ថតរូបវិក្កយបត្រ ឬ Screenshot ផ្ទេរប្រាក់ ABA/ACLEDA`,
         `4️⃣ <b>ទីតាំង (Location)៖</b> ចុចប៊ូតុង 📍 ខាងក្រោម ឬសរសេរឈ្មោះទីតាំងក្នុងសារ`,
         ``,
-        `<b>ពាក្យបញ្ជាសំខាន់ៗ៖</b>`,
-        `• /summary — មើលសង្ខេបថ្ងៃនេះ និងខែនេះ`,
-        `• /report — ទាញយក File Excel (សរុប + លម្អិត) ខែនេះភ្លាមៗ`,
-        `• /report 2026-11 — ទាញយក Excel តាមខែជាក់លាក់`,
-        `• /undo — លុបកំណត់ត្រាចុងក្រោយ`,
-        `• /sync — រុញទិន្នន័យដែលមិនទាន់ចូល Google Sheet`,
-        `• /myid — មើល Chat ID របស់អ្នក (<code>${escapeHtml(chatId)}</code>)`,
+        `<b>ពាក្យបញ្ជាសំខាន់ៗ:</b>`,
+        `- /summary : មើលសង្ខេបថ្ងៃនេះ និងខែនេះ`,
+        `- /report : ទាញយក File Excel (សរុប + លម្អិត) ខែនេះភ្លាមៗ`,
+        `- /report 2026-11 : ទាញយក Excel តាមខែជាក់លាក់`,
+        `- /undo : លុបកំណត់ត្រាចុងក្រោយ`,
+        `- /sync : រុញទិន្នន័យដែលមិនទាន់ចូល Google Sheet`,
+        `- /myid : មើល Chat ID របស់អ្នក (<code>${escapeHtml(chatId)}</code>)`,
       ].join('\n');
 
       await this.sendMessage(chatId, msg, { reply_markup: replyMarkup });
@@ -223,13 +223,13 @@ export class TelegramService {
       const msg = [
         `📈 <b>សង្ខេបចំណូល-ចំណាយ</b>`,
         ``,
-        `<b>📅 ថ្ងៃនេះ (${escapeHtml(todayKey)}) — ${todaySum.count} ប្រតិបត្តិការ៖</b>`,
-        `• USD ($): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.USD.expense, '$'))}</b>`,
-        `• KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.KHR.expense, '៛'))}</b>`,
+        `<b>📅 ថ្ងៃនេះ (${escapeHtml(todayKey)}) (${todaySum.count} ប្រតិបត្តិការ):</b>`,
+        `- USD ($): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.USD.expense, '$'))}</b>`,
+        `- KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.KHR.expense, '៛'))}</b>`,
         ``,
-        `<b>🗓 ខែនេះ (${escapeHtml(monthKey)}) — ${monthSum.count} ប្រតិបត្តិការ៖</b>`,
-        `• USD ($): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.USD.expense, '$'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.USD.net, '$'))}</b>`,
-        `• KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.expense, '៛'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.net, '៛'))}</b>`,
+        `<b>🗓 ខែនេះ (${escapeHtml(monthKey)}) (${monthSum.count} ប្រតិបត្តិការ):</b>`,
+        `- USD ($): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.USD.expense, '$'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.USD.net, '$'))}</b>`,
+        `- KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.expense, '៛'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.net, '៛'))}</b>`,
       ].join('\n');
 
       await this.sendMessage(chatId, msg);
@@ -322,12 +322,12 @@ export class TelegramService {
       const icon = tx.type === 'ចំណូល' ? '🟢' : '🔴';
       const prefix = saved.length > 1 ? `#${i + 1} ` : '';
       return [
-        `${prefix}${icon} <b>${escapeHtml(tx.type)}</b> — <b>${escapeHtml(formatMoney(tx.amount, tx.currency))}</b>`,
-        `• 📅 កាលបរិច្ឆេទ៖ ${escapeHtml(tx.date)}`,
-        `• 🏷 ប្រភេទ៖ ${escapeHtml(tx.categories)}`,
-        tx.description ? `• 📝 ពណ៌នា៖ ${escapeHtml(tx.description)}` : null,
-        tx.paymentMethod ? `• 💳 ទូទាត់៖ ${escapeHtml(tx.paymentMethod)}` : null,
-        tx.location ? `• 📍 ទីតាំង៖ ${escapeHtml(tx.location)}` : null,
+        `${prefix}${icon} <b>${escapeHtml(tx.type)}: ${escapeHtml(formatMoney(tx.amount, tx.currency))}</b>`,
+        `📅 កាលបរិច្ឆេទ: ${escapeHtml(tx.date)}`,
+        `🏷 ប្រភេទ: ${escapeHtml(tx.categories)}`,
+        tx.description ? `📝 ពណ៌នា: ${escapeHtml(tx.description)}` : null,
+        tx.paymentMethod ? `💳 ទូទាត់: ${escapeHtml(tx.paymentMethod)}` : null,
+        tx.location ? `📍 ទីតាំង: ${escapeHtml(tx.location)}` : null,
       ]
         .filter(Boolean)
         .join('\n');
