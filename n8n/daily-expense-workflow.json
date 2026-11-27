@@ -1,0 +1,49 @@
+{
+  "name": "Daily Income & Expense Bot (Telegram -> AI -> Google Sheets)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"]
+      },
+      "id": "tg-trigger-1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/transactions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { useAi: true, text: $json.message.text || $json.message.caption || '' } }}"
+      },
+      "id": "http-parse-1",
+      "name": "Parse with Gemini & Save",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ 'Recorded ' + $json.transactions.length + ' item(s).' }}"
+      },
+      "id": "tg-reply-1",
+      "name": "Telegram Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [740, 300]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Parse with Gemini & Save", "type": "main", "index": 0 }]]
+    },
+    "Parse with Gemini & Save": {
+      "main": [[{ "node": "Telegram Reply", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false
+}

@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: khmer-finance-telegram-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: TIMEZONE
+        value: Asia/Phnom_Penh
+      - key: TELEGRAM_MODE
+        value: webhook
+      - key: NGROK_AUTOSTART
+        value: "false"
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: MONTHLY_REPORT_HOUR
+        value: "16"
+      - key: MONTHLY_REPORT_MINUTE
+        value: "0"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+      - key: TELEGRAM_ALLOWED_CHAT_IDS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_APPS_SCRIPT_URL
+        sync: false
+      - key: GOOGLE_APPS_SCRIPT_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false

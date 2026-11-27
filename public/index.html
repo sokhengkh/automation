@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance AI Automation — Telegram & Google Sheets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div>
+        <h1>💼 កត់ត្រាចំណូល-ចំណាយប្រចាំថ្ងៃ AI</h1>
+        <p class="subtitle">Telegram Bot (Text · Voice · Receipt · Location) → Gemini AI → Google Sheets → Monthly Excel</p>
+      </div>
+      <div class="topbar-actions">
+        <input type="month" id="monthPicker" class="input" />
+        <button id="downloadExcelBtn" class="btn btn-primary">📥 ទាញយក Excel (.xlsx)</button>
+        <button id="sendTelegramBtn" class="btn btn-accent">✈️ ផ្ញើ Excel ទៅ Telegram</button>
+      </div>
+    </header>
+
+    <section class="status-grid" id="statusGrid">
+      <div class="status-card">
+        <span class="status-label">Telegram Bot</span>
+        <strong id="stTelegram">Checking...</strong>
+        <small id="stTelegramSub">-</small>
+      </div>
+      <div class="status-card">
+        <span class="status-label">ngrok Tunnel</span>
+        <strong id="stNgrok">-</strong>
+        <small id="stNgrokSub">Webhook Endpoint</small>
+      </div>
+      <div class="status-card">
+        <span class="status-label">Gemini AI</span>
+        <strong id="stGemini">-</strong>
+        <small id="stGeminiSub">Multimodal Parser</small>
+      </div>
+      <div class="status-card">
+        <span class="status-label">Google Sheet Sync</span>
+        <strong id="stSheet">-</strong>
+        <div class="status-links">
+          <a id="openSheetLink" href="#" target="_blank" rel="noopener">បើក Sheet ↗</a>
+          <button id="syncNowBtn" class="btn-link">Sync ឥឡូវ</button>
+          <button id="setupSheetBtn" class="btn-link">ភ្ជាប់ Apps Script</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="sheetAlert" class="alert-banner hidden">
+      <div>
+        <strong>⚠️ Google Sheet មិនទាន់ភ្ជាប់ API ទេ៖</strong>
+        ទិន្នន័យកំពុងរក្សាទុកក្នុងម៉ាស៊ីនជាបណ្តោះអាសន្ន។ សូមចុច <b>"ភ្ជាប់ Apps Script"</b> ដើម្បីឱ្យប្រព័ន្ធរុញទិន្នន័យចូល Google Sheet ដោយស្វ័យប្រវត្តិ។
+      </div>
+      <button id="alertSetupBtn" class="btn btn-sm btn-primary">មើលវិធីភ្ជាប់ 1 នាទី</button>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-card kpi-income">
+        <div class="kpi-title">ចំណូលសរុប (Total Income)</div>
+        <div class="kpi-values">
+          <div class="kpi-main" id="kpiUsdIncome">$0.00</div>
+          <div class="kpi-sub" id="kpiKhrIncome">0 ៛</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-expense">
+        <div class="kpi-title">ចំណាយសរុប (Total Expense)</div>
+        <div class="kpi-values">
+          <div class="kpi-main" id="kpiUsdExpense">$0.00</div>
+          <div class="kpi-sub" id="kpiKhrExpense">0 ៛</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-net">
+        <div class="kpi-title">សមតុល្យសុទ្ធ (Net Balance)</div>
+        <div class="kpi-values">
+          <div class="kpi-main" id="kpiUsdNet">$0.00</div>
+          <div class="kpi-sub" id="kpiKhrNet">0 ៛</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-count">
+        <div class="kpi-title">ចំនួនប្រតិបត្តិការ & Schedule</div>
+        <div class="kpi-values">
+          <div class="kpi-main" id="kpiCount">0</div>
+          <div class="kpi-sub" id="kpiSchedule">ចុងខែម៉ោង 16:00</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel quick-add-panel">
+      <div class="panel-header">
+        <h2>✨ បញ្ចូលរហ័សដោយ AI ឬ ដោយដៃ</h2>
+        <div class="tabs">
+          <button class="tab active" data-tab="ai">🤖 សរសេរឱ្យ AI កត់</button>
+          <button class="tab" data-tab="manual">📝 បញ្ចូលដោយដៃ</button>
+        </div>
+      </div>
+
+      <form id="aiForm" class="ai-form">
+        <input
+          type="text"
+          id="aiInputText"
+          class="input input-lg"
+          placeholder='ឧ. "កាហ្វេ Amazon 2.5$ បង់តាម ABA នៅ BKK1" ឬ "ទទួលប្រាក់ខែ 900$ ACLEDA"'
+          required
+        />
+        <button type="submit" class="btn btn-primary" id="aiSubmitBtn">បំប្លែង និងកត់ត្រា</button>
+      </form>
+
+      <form id="manualForm" class="manual-form hidden">
+        <input type="text" id="mDate" class="input" placeholder="YYYY-MM-DD HH:mm" />
+        <select id="mType" class="input">
+          <option value="ចំណាយ">ចំណាយ (Expense)</option>
+          <option value="ចំណូល">ចំណូល (Income)</option>
+        </select>
+        <select id="mCategory" class="input"></select>
+        <input type="number" step="any" id="mAmount" class="input" placeholder="ចំនួនទឹកប្រាក់" required />
+        <select id="mCurrency" class="input">
+          <option value="$">USD ($)</option>
+          <option value="៛">KHR (៛)</option>
+        </select>
+        <input type="text" id="mPayment" class="input" placeholder="វិធីទូទាត់ (ABA, Cash...)" />
+        <input type="text" id="mLocation" class="input" placeholder="ទីតាំង (Location)" />
+        <input type="text" id="mDescription" class="input" placeholder="ពណ៌នា (Optional)" />
+        <button type="submit" class="btn btn-primary">រក្សាទុក</button>
+      </form>
+      <div id="formFeedback" class="feedback"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>📋 តារាងកំណត់ត្រា (Transactions)</h2>
+        <div class="filters">
+          <input type="search" id="searchInput" class="input" placeholder="ស្វែងរក (ពណ៌នា, ទីតាំង, ABA...)" />
+          <select id="typeFilter" class="input">
+            <option value="">ប្រភេទទាំងអស់</option>
+            <option value="ចំណូល">ចំណូល</option>
+            <option value="ចំណាយ">ចំណាយ</option>
+          </select>
+          <select id="currencyFilter" class="input">
+            <option value="">រូបិយប័ណ្ណទាំងអស់</option>
+            <option value="$">USD ($)</option>
+            <option value="៛">KHR (៛)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Categories</th>
+              <th class="num">Amount</th>
+              <th>Currency</th>
+              <th>Description</th>
+              <th>Payment Method</th>
+              <th>Location</th>
+              <th>Sync</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody">
+            <tr><td colspan="10" class="empty">កំពុងផ្ទុកទិន្នន័យ...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Apps Script Setup Modal -->
+  <div id="setupModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔗 ភ្ជាប់ Google Sheet តាម Apps Script (ងាយស្រួល ១ នាទី)</h3>
+        <button id="closeModalBtn" class="btn-close">✕</button>
+      </div>
+      <ol class="steps">
+        <li>បើក Google Sheet របស់អ្នក → ចុច <b>Extensions</b> → <b>Apps Script</b></li>
+        <li>ចម្លងកូដពី File <code>google-apps-script/Code.gs</code> ទៅដាក់ក្នុង <code>Code.gs</code> ហើយចុច <b>Save</b></li>
+        <li>ចុច <b>Deploy → New deployment → Type: Web app</b> (Execute as: <b>Me</b>, Who has access: <b>Anyone</b>)</li>
+        <li>ចម្លង <b>Web app URL</b> មកដាក់ខាងក្រោម ហើយចុច Save & Test៖</li>
+      </ol>
+      <form id="appsScriptForm" class="modal-form">
+        <input
+          type="url"
+          id="appsScriptUrlInput"
+          class="input input-lg"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          required
+        />
+        <button type="submit" class="btn btn-primary">Save & Test Connection</button>
+      </form>
+      <div id="modalFeedback" class="feedback"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

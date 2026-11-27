@@ -1,0 +1,65 @@
+{
+  "name": "Monthly 2-Sheet Excel Report to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 16 28-31 * *" }]
+        }
+      },
+      "id": "cron-1",
+      "name": "End of Month Afternoon Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst tomorrow = new Date(now.getTime() + 86400000);\nconst isLastDay = tomorrow.getDate() === 1;\nif (!isLastDay) return [];\nconst month = now.toISOString().slice(0, 7);\nreturn [{ json: { month } }];"
+      },
+      "id": "code-lastday-1",
+      "name": "Filter Last Day of Month",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [430, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://localhost:3000/api/report/excel?month=' + $json.month }}",
+        "options": {
+          "response": { "response": { "responseFormat": "file" } }
+        }
+      },
+      "id": "http-excel-1",
+      "name": "Download 2-Sheet Excel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [670, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "YOUR_CHAT_ID",
+        "binaryData": true
+      },
+      "id": "tg-doc-1",
+      "name": "Send Excel on Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 300]
+    }
+  ],
+  "connections": {
+    "End of Month Afternoon Check": {
+      "main": [[{ "node": "Filter Last Day of Month", "type": "main", "index": 0 }]]
+    },
+    "Filter Last Day of Month": {
+      "main": [[{ "node": "Download 2-Sheet Excel", "type": "main", "index": 0 }]]
+    },
+    "Download 2-Sheet Excel": {
+      "main": [[{ "node": "Send Excel on Telegram", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false
+}
