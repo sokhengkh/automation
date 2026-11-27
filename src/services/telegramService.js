@@ -165,7 +165,6 @@ export class TelegramService {
       await storageService.registerOwnerChatId(chatId);
       const replyMarkup = {
         keyboard: [
-          [{ text: '📍 Share Location (ចែករំលែកទីតាំង)', request_location: true }],
           [{ text: '/summary' }, { text: '/report' }],
         ],
         resize_keyboard: true,
@@ -174,11 +173,11 @@ export class TelegramService {
       const msg = [
         `សួស្តី! 🤖 <b>ជំនួយការកត់ត្រាចំណូល-ចំណាយ AI</b>`,
         ``,
-        `អ្នកអាចផ្ញើមកខ្ញុំបានគ្រប់ទម្រង់៖`,
-        `1️⃣ <b>សារអក្សរ (ខ្មែរ/អង់គ្លេស)៖</b> ឧ. <i>"កាហ្វេ Amazon 2.5$ ABA នៅ BKK1"</i> ឬ <i>"ទទួលប្រាក់ខែ 800$ ACLEDA"</i>`,
-        `2️⃣ <b>សារសំឡេង (Voice)៖</b> និយាយប្រាប់ចំណូល ឬ ចំណាយជាភាសាខ្មែរ/អង់គ្លេស`,
-        `3️⃣ <b>រូបភាពវិក្កយបត្រ (Receipt Photo)៖</b> ថតរូបវិក្កយបត្រ ឬ Screenshot ផ្ទេរប្រាក់ ABA/ACLEDA`,
-        `4️⃣ <b>ទីតាំង (Location)៖</b> ចុចប៊ូតុង 📍 ខាងក្រោម ឬសរសេរឈ្មោះទីតាំងក្នុងសារ`,
+        `អ្នកអាចផ្ញើមកខ្ញុំបានគ្រប់ទម្រង់:`,
+        `1️⃣ <b>សារអក្សរ (ខ្មែរ/អង់គ្លេស):</b> ឧ. <i>"កាហ្វេ Amazon 2.5$ ABA នៅ BKK1"</i> ឬ <i>"ទទួលប្រាក់ខែ 800$ ACLEDA"</i>`,
+        `2️⃣ <b>សារសំឡេង (Voice):</b> និយាយប្រាប់ចំណូល ឬ ចំណាយជាភាសាខ្មែរ/អង់គ្លេស`,
+        `3️⃣ <b>រូបភាពវិក្កយបត្រ (Receipt Photo):</b> ថតរូបវិក្កយបត្រ ឬ Screenshot ផ្ទេរប្រាក់ ABA/ACLEDA`,
+        `4️⃣ <b>ទីតាំង (Location):</b> AI ចាប់យកឈ្មោះហាង អ្នកទទួល ឬទីកន្លែងដោយស្វ័យប្រវត្តិពីសារ សំឡេង និងវិក្កយបត្រ`,
         ``,
         `<b>ពាក្យបញ្ជាសំខាន់ៗ:</b>`,
         `- /summary : មើលសង្ខេបថ្ងៃនេះ និងខែនេះ`,

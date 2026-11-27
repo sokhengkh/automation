@@ -51,7 +51,7 @@ const RESPONSE_SCHEMA = {
           },
           location: {
             type: 'string',
-            description: 'Merchant, shop, branch, or place name if mentioned or printed on receipt, else empty string.',
+            description: 'Shop/merchant/recipient name, branch, address, or place extracted from text, voice, printed receipt, or ABA/ACLEDA transfer slip. Empty string only if no place or merchant exists.',
           },
         },
         required: ['date', 'type', 'categories', 'amount', 'currency', 'description', 'paymentMethod', 'location'],
@@ -89,7 +89,7 @@ Rules:
    - If user says "ម្សិលមិញ" (yesterday), subtract 1 day from ${todayStr}.
    - If no date is mentioned, use "${nowStr}".
 6. Payment Method: Extract ABA, ACLEDA, Wing, KHQR, Pi Pay, Cash (សាច់ប្រាក់), Card, etc. if mentioned or shown on receipt (e.g. ABA Pay receipt -> "ABA"); otherwise "".
-7. Location: Extract shop/merchant/branch/place name (e.g. "Brown Coffee BKK1", "Aeon Mall 2", "PTT Station", "ផ្សារថ្មី") if mentioned or printed on receipt; otherwise "".
+7. Location: ALWAYS extract any shop, merchant, recipient, branch, market, street, district, or place name from text, voice, printed receipts, and ABA/ACLEDA/KHQR screenshots (e.g., "To: BROWN COFFEE BKK1" -> "BROWN COFFEE BKK1", "Paid to LUCKY EXPRESS" -> "LUCKY EXPRESS", "ចាក់សាំង PTT" -> "PTT", "ទិញបាយផ្សារថ្មី" -> "ផ្សារថ្មី"). If a receipt shows both shop name and address/branch, combine them concisely (e.g. "Tube Coffee - Tuol Kork"). Leave "" only if no merchant or place is mentioned or visible anywhere.
 8. Multiple items in one message (e.g. "កាហ្វេ 2.5$ និងបាយ 12000 រៀល") -> return multiple items in "transactions". If a receipt has many line items for one single purchase, combine into ONE total transaction with a concise description of the main items unless clearly separate receipts.
 9. If the input is NOT a transaction (e.g. greeting or unrelated image), set isTransaction=false, transactions=[], and explain politely in Khmer inside replyText.`;
 }
