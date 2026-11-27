@@ -62,6 +62,9 @@ export function createApp() {
           hour: config.schedule.hour,
           minute: config.schedule.minute,
         },
+        reminders: {
+          waterBill: config.reminders.waterBill,
+        },
       });
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
@@ -302,6 +305,20 @@ export function createApp() {
       const monthKey = String(req.query.month || '').trim() || null;
       const result = await schedulerService.runMonthlyCheck({ force, monthKey });
       res.json({ ok: true, ...result });
+    } catch (err) {
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+
+  app.all('/api/cron/reminders', async (req, res) => {
+    const providedSecret = String(req.query.secret || req.get('x-cron-secret') || '').trim();
+    if (config.cronSecret && providedSecret !== config.cronSecret) {
+      return res.status(403).json({ ok: false, error: 'Invalid cron secret' });
+    }
+    try {
+      const force = String(req.query.force || '').toLowerCase() === 'true';
+      const waterBill = await schedulerService.runWaterBillCheck({ force });
+      res.json({ ok: true, waterBill });
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
     }

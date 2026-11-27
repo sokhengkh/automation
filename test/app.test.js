@@ -8,9 +8,13 @@ import ExcelJS from 'exceljs';
 import {
   extractMonthKey,
   formatMonthLabelKhmer,
+  getNextWaterBillMonth,
   isLastDayOfMonth,
+  isWaterBillMonth,
+  isWaterBillReminderWindow,
 } from '../src/utils/dateUtils.js';
 import {
+  isWaterBillTransaction,
   normalizeAmount,
   normalizeCurrency,
   normalizeTransactionRecord,
@@ -206,6 +210,9 @@ test('server HTTP endpoints respond cleanly', async () => {
 
     const badCronRes = await fetch(`http://127.0.0.1:${port}/api/cron/monthly-report?secret=wrong`);
     assert.equal(badCronRes.status, 403);
+
+    const badRemRes = await fetch(`http://127.0.0.1:${port}/api/cron/reminders?secret=wrong`);
+    assert.equal(badRemRes.status, 403);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -251,4 +258,33 @@ test('geminiService: auto-discovers and caches live Flash model when older model
   const second = await svc.testConnection();
   assert.equal(second.ok, true);
   assert.deepEqual(calls, ['gemini-9.0-flash-lite']);
+});
+
+test('waterBill: detects bi-monthly days 16-18 window and matches water utility transactions accurately', () => {
+  assert.equal(isWaterBillMonth('2026-12', '2026-12'), true);
+  assert.equal(isWaterBillMonth('2027-01', '2026-12'), false);
+  assert.equal(isWaterBillMonth('2027-02', '2026-12'), true);
+
+  assert.equal(
+    isWaterBillReminderWindow(new Date('2026-12-16T02:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 16, 18).active,
+    true
+  );
+  assert.equal(
+    isWaterBillReminderWindow(new Date('2026-12-18T02:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 16, 18).active,
+    true
+  );
+  assert.equal(
+    isWaterBillReminderWindow(new Date('2026-12-15T02:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 16, 18).active,
+    false
+  );
+  assert.equal(
+    isWaterBillReminderWindow(new Date('2027-01-17T02:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 16, 18).active,
+    false
+  );
+
+  assert.equal(getNextWaterBillMonth(new Date('2026-11-27T09:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 18), '2026-12');
+  assert.equal(getNextWaterBillMonth(new Date('2026-12-19T09:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 18), '2027-02');
+
+  assert.equal(isWaterBillTransaction({ description: 'បង់វិក្កយបត្រទឹក PPWSA', categories: 'Bills & Utilities' }), true);
+  assert.equal(isWaterBillTransaction({ description: 'ទិញទឹកសុទ្ធ ២ដប', categories: 'Food & Drink' }), false);
 });

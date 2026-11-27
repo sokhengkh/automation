@@ -55,3 +55,7 @@ Render Free នឹង Sleep បើគ្មានចរាចរណ៍ 15 នា
    - **URL:** `https://YOUR-APP.onrender.com/api/cron/monthly-report?secret=kh_finance_bot_secret_2026`
    - **Schedule:** រៀងរាល់ថ្ងៃ ម៉ោង **16:00** (`Asia/Phnom_Penh`)
    - *(ប្រព័ន្ធនឹងឆែកដោយស្វ័យប្រវត្តិ៖ ផ្ញើតែនៅថ្ងៃចុងខែ និងផ្ញើតែ ១ ដងប៉ុណ្ណោះក្នុង ១ ខែ!)*
+4. បង្កើត **Cronjob ទី ៣ (រំលឹកបង់វិក្កយបត្រទឹក ២ ខែម្តង ថ្ងៃ 16-18)៖**
+   - **URL:** `https://YOUR-APP.onrender.com/api/cron/reminders?secret=kh_finance_bot_secret_2026`
+   - **Schedule:** រៀងរាល់ថ្ងៃ ម៉ោង **09:00** (`Asia/Phnom_Penh`)
+   - *(រំលឹកតែថ្ងៃទី 16-18 រៀងរាល់ 2 ខែម្តង ហើយឈប់រំលឹកភ្លាមពេលអ្នកបានកត់វិក្កយបត្រទឹកចូល Sheet!)*

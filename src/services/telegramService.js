@@ -2,9 +2,15 @@ import { config } from '../config.js';
 import {
   formatMonthLabelKhmer,
   getCurrentMonthKey,
+  getNextWaterBillMonth,
   getTodayDateString,
+  parseMonthKey,
 } from '../utils/dateUtils.js';
-import { formatMoney, summarizeTransactions } from '../utils/financeUtils.js';
+import {
+  formatMoney,
+  isWaterBillTransaction,
+  summarizeTransactions,
+} from '../utils/financeUtils.js';
 import { buildMonthlyExcelBuffer } from './excelService.js';
 import { geminiService } from './geminiService.js';
 import { sheetsService } from './sheetsService.js';
@@ -69,6 +75,17 @@ export class TelegramService {
       disable_web_page_preview: true,
       ...extra,
     });
+  }
+
+  async answerCallbackQuery(callbackQueryId, text = '') {
+    try {
+      await this.apiCall('answerCallbackQuery', {
+        callback_query_id: callbackQueryId,
+        text,
+      });
+    } catch {
+      // Ignore expired callback query warnings
+    }
   }
 
   async sendChatAction(chatId, action = 'typing') {
@@ -157,6 +174,63 @@ export class TelegramService {
     return { filename, count: summary.count, summary };
   }
 
+  async sendWaterBillReminderToChat(chatId, monthKey = getCurrentMonthKey(config.timezone)) {
+    const msg = [
+      `💧 <b>រំលឹកបង់វិក្កយបត្រទឹក (${escapeHtml(formatMonthLabelKhmer(monthKey))})</b>`,
+      ``,
+      `ដល់វដ្តបង់វិក្កយបត្រទឹក (២ ខែម្តង · ថ្ងៃទី 16-18) ហើយ!`,
+      `បើអ្នកបានបង់រួច សូមផ្ញើ <b>រូបវិក្កយបត្រ ABA/ACLEDA</b> ឬវាយចំនួនទឹកប្រាក់ (ឧ. <i>"បង់ថ្លៃទឹក 25000 រៀល ABA"</i>) ដើម្បីកត់ចូល Google Sheet ហើយឈប់រំលឹកដោយស្វ័យប្រវត្តិ។`,
+    ].join('\n');
+
+    await this.sendMessage(chatId, msg, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '✅ របៀបកត់ត្រា', callback_data: 'wb:paid_prompt' },
+            { text: '⏭ ឈប់រំលឹកខែនេះ', callback_data: `wb:snooze:${monthKey}` },
+          ],
+        ],
+      },
+    });
+  }
+
+  async sendWaterBillStatusToChat(chatId) {
+    const wbCfg = config.reminders.waterBill;
+    const anchorMonth = await storageService.getWaterBillAnchorMonth(wbCfg.anchorMonth);
+    const nextMonth = getNextWaterBillMonth(new Date(), config.timezone, anchorMonth, wbCfg.endDay);
+    const currentMonth = getCurrentMonthKey(config.timezone);
+    const snoozed = await storageService.isWaterBillSnoozed(nextMonth);
+    const { transactions } = await sheetsService.getTransactionsForMonth(currentMonth);
+    const paidThisMonth = transactions.some(isWaterBillTransaction);
+    const hh = String(wbCfg.hour).padStart(2, '0');
+    const mm = String(wbCfg.minute).padStart(2, '0');
+
+    const msg = [
+      `💧 <b>ការរំលឹកបង់វិក្កយបត្រទឹក (២ ខែម្តង)</b>`,
+      `- ថ្ងៃរំលឹក: <b>ថ្ងៃទី ${wbCfg.startDay} ដល់ ${wbCfg.endDay}</b> (ម៉ោង ${hh}:${mm})`,
+      `- ខែបន្ទាប់: <b>${escapeHtml(formatMonthLabelKhmer(nextMonth))}</b>`,
+      `- វដ្តគោល (Anchor): <code>${escapeHtml(anchorMonth)}</code>`,
+      `- ស្ថានភាពខែនេះ: ${paidThisMonth ? '✅ បង់រួចហើយ' : snoozed ? '⏭ បានផ្អាកខែនេះ' : '⏳ រង់ចាំបង់តាមវដ្ត'}`,
+      ``,
+      `<i>អាចវាយ /waterbill YYYY-MM (ឧ. /waterbill 2027-01) ឬចុចប៊ូតុងខាងក្រោមដើម្បីប្តូរវដ្ត។</i>`,
+    ].join('\n');
+
+    await this.sendMessage(chatId, msg, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '📅 ខែគូ (ធ្នូ, កុម្ភៈ, មេសា...)', callback_data: 'wb:cycle:2026-12' },
+            { text: '📅 ខែសេស (មករា, មីនា, ឧសភា...)', callback_data: 'wb:cycle:2027-01' },
+          ],
+          [
+            { text: '🔔 សាកផ្ញើសាររំលឹកឥឡូវ', callback_data: `wb:test:${nextMonth}` },
+            { text: '⏭ ឈប់រំលឹកខែបន្ទាប់', callback_data: `wb:snooze:${nextMonth}` },
+          ],
+        ],
+      },
+    });
+  }
+
   async handleCommand(chatId, text) {
     const [cmdRaw, argRaw] = text.trim().split(/\s+/, 2);
     const cmd = cmdRaw.toLowerCase().split('@')[0];
@@ -165,7 +239,7 @@ export class TelegramService {
       await storageService.registerOwnerChatId(chatId);
       const replyMarkup = {
         keyboard: [
-          [{ text: '/summary' }, { text: '/report' }],
+          [{ text: '/summary' }, { text: '/report' }, { text: '/waterbill' }],
         ],
         resize_keyboard: true,
       };
@@ -185,6 +259,7 @@ export class TelegramService {
         `- /report 2026-11 : ទាញយក Excel តាមខែជាក់លាក់`,
         `- /undo : លុបកំណត់ត្រាចុងក្រោយ`,
         `- /sync : រុញទិន្នន័យដែលមិនទាន់ចូល Google Sheet`,
+        `- /waterbill : កំណត់ និងមើលការរំលឹកវិក្កយបត្រទឹក (២ ខែម្តង ថ្ងៃ 16-18)`,
         `- /myid : មើល Chat ID របស់អ្នក (<code>${escapeHtml(chatId)}</code>)`,
       ].join('\n');
 
@@ -270,7 +345,74 @@ export class TelegramService {
       return;
     }
 
+    if (cmd === '/waterbill') {
+      if (argRaw === 'test') {
+        const anchor = await storageService.getWaterBillAnchorMonth(config.reminders.waterBill.anchorMonth);
+        const nextMonth = getNextWaterBillMonth(new Date(), config.timezone, anchor, config.reminders.waterBill.endDay);
+        await this.sendWaterBillReminderToChat(chatId, nextMonth);
+        return;
+      }
+      if (parseMonthKey(argRaw)) {
+        await storageService.setWaterBillAnchorMonth(argRaw);
+        await this.sendMessage(chatId, `✅ បានប្តូរវដ្តរំលឹកវិក្កយបត្រទឹក ២ ខែម្តង ចាប់ពីខែ <b>${escapeHtml(argRaw)}</b>!`);
+      }
+      await this.sendWaterBillStatusToChat(chatId);
+      return;
+    }
+
     await this.sendMessage(chatId, 'មិនស្គាល់ពាក្យបញ្ជានេះទេ។ វាយ /help ដើម្បីមើលការណែនាំ។');
+  }
+
+  async handleCallbackQuery(callbackQuery) {
+    const chatId = callbackQuery?.message?.chat?.id;
+    const messageId = callbackQuery?.message?.message_id;
+    const data = String(callbackQuery?.data || '');
+    if (!chatId) return;
+
+    const allowed = await this.isChatAllowed(chatId);
+    if (!allowed) {
+      await this.answerCallbackQuery(callbackQuery.id, 'Unauthorized');
+      return;
+    }
+
+    if (data === 'wb:paid_prompt') {
+      await this.answerCallbackQuery(callbackQuery.id, 'ផ្ញើវិក្កយបត្រឬចំនួនទឹកប្រាក់មក Bot!');
+      await this.sendMessage(
+        chatId,
+        '💧 សូមផ្ញើ <b>រូបវិក្កយបត្រ ABA/ACLEDA</b> ឬវាយ/និយាយប្រាប់ (ឧ. <i>"បង់ថ្លៃទឹក 25000 រៀល ABA"</i>) ដើម្បីកត់ចូល Google Sheet។ ពេលកត់រួច ប្រព័ន្ធនឹងឈប់រំលឹកខែនេះដោយស្វ័យប្រវត្តិ!'
+      );
+      return;
+    }
+
+    if (data.startsWith('wb:snooze:')) {
+      const monthKey = data.slice('wb:snooze:'.length);
+      await storageService.snoozeWaterBillMonth(monthKey);
+      await this.answerCallbackQuery(callbackQuery.id, `បានឈប់រំលឹកខែ ${monthKey}`);
+      if (messageId) {
+        await this.editMessageText(
+          chatId,
+          messageId,
+          `✅ បានឈប់រំលឹកវិក្កយបត្រទឹកសម្រាប់ខែ <b>${escapeHtml(monthKey)}</b> រួចរាល់!`
+        ).catch(() => {});
+      }
+      return;
+    }
+
+    if (data.startsWith('wb:cycle:')) {
+      const anchor = data.slice('wb:cycle:'.length);
+      if (parseMonthKey(anchor)) {
+        await storageService.setWaterBillAnchorMonth(anchor);
+        await this.answerCallbackQuery(callbackQuery.id, `ប្តូរវដ្តទៅ ${anchor}`);
+        await this.sendWaterBillStatusToChat(chatId);
+      }
+      return;
+    }
+
+    if (data.startsWith('wb:test:')) {
+      const monthKey = data.slice('wb:test:'.length) || getCurrentMonthKey(config.timezone);
+      await this.answerCallbackQuery(callbackQuery.id, 'កំពុងផ្ញើសាររំលឹកសាកល្បង...');
+      await this.sendWaterBillReminderToChat(chatId, monthKey);
+    }
   }
 
   async handleLocationMessage(chatId, message) {
@@ -364,6 +506,11 @@ export class TelegramService {
   }
 
   async handleUpdate(update) {
+    if (update?.callback_query) {
+      await this.handleCallbackQuery(update.callback_query);
+      return;
+    }
+
     const message = update?.message || update?.edited_message;
     if (!message || !message.chat) return;
 
@@ -459,7 +606,7 @@ export class TelegramService {
     await this.apiCall('setWebhook', {
       url: webhookUrl,
       secret_token: config.telegram.webhookSecret,
-      allowed_updates: ['message', 'edited_message'],
+      allowed_updates: ['message', 'edited_message', 'callback_query'],
     });
     this.mode = 'webhook';
     this.webhookUrl = webhookUrl;
@@ -482,7 +629,7 @@ export class TelegramService {
         const updates = await this.apiCall('getUpdates', {
           offset: this.pollingOffset,
           timeout: 25,
-          allowed_updates: ['message', 'edited_message'],
+          allowed_updates: ['message', 'edited_message', 'callback_query'],
         });
         for (const update of updates) {
           this.pollingOffset = Math.max(this.pollingOffset, update.update_id + 1);

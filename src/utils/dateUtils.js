@@ -84,3 +84,64 @@ export function formatMonthLabelKhmer(monthKey) {
   const idx = Number(month) - 1;
   return `${khMonths[idx] || month} ${year} (${monthKey})`;
 }
+
+export function parseMonthKey(monthKey) {
+  const match = String(monthKey || '').trim().match(/^(\d{4})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return { year, month };
+}
+
+export function addMonthsToMonthKey(monthKey, deltaMonths) {
+  const parsed = parseMonthKey(monthKey);
+  if (!parsed) return '';
+  const total = parsed.year * 12 + (parsed.month - 1) + deltaMonths;
+  const nextYear = Math.floor(total / 12);
+  const nextMonth = (total % 12) + 1;
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+}
+
+export function isWaterBillMonth(monthKey, anchorMonth = '2026-12') {
+  const target = parseMonthKey(monthKey);
+  const anchor = parseMonthKey(anchorMonth);
+  if (!target || !anchor) return false;
+  const diff = (target.year * 12 + target.month) - (anchor.year * 12 + anchor.month);
+  return Math.abs(diff) % 2 === 0;
+}
+
+export function isWaterBillReminderWindow(
+  date = new Date(),
+  timeZone = 'Asia/Phnom_Penh',
+  anchorMonth = '2026-12',
+  startDay = 16,
+  endDay = 18
+) {
+  const { year, month, day } = getDateParts(date, timeZone);
+  const monthKey = `${year}-${month}`;
+  const dateKey = `${year}-${month}-${day}`;
+  const dayNum = Number(day);
+  const active = dayNum >= startDay && dayNum <= endDay && isWaterBillMonth(monthKey, anchorMonth);
+  return { active, monthKey, dateKey, day: dayNum };
+}
+
+export function getNextWaterBillMonth(
+  date = new Date(),
+  timeZone = 'Asia/Phnom_Penh',
+  anchorMonth = '2026-12',
+  endDay = 18
+) {
+  const { year, month, day } = getDateParts(date, timeZone);
+  const currentMonthKey = `${year}-${month}`;
+  const dayNum = Number(day);
+
+  if (isWaterBillMonth(currentMonthKey, anchorMonth) && dayNum <= endDay) {
+    return currentMonthKey;
+  }
+  let candidate = addMonthsToMonthKey(currentMonthKey, 1);
+  if (!isWaterBillMonth(candidate, anchorMonth)) {
+    candidate = addMonthsToMonthKey(candidate, 1);
+  }
+  return candidate;
+}

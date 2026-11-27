@@ -19,6 +19,14 @@ services:
         value: "16"
       - key: MONTHLY_REPORT_MINUTE
         value: "0"
+      - key: WATER_BILL_ENABLED
+        value: "true"
+      - key: WATER_BILL_ANCHOR_MONTH
+        value: "2026-12"
+      - key: WATER_BILL_REMINDER_HOUR
+        value: "9"
+      - key: WATER_BILL_REMINDER_MINUTE
+        value: "0"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_WEBHOOK_SECRET

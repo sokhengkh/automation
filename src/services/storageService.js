@@ -30,6 +30,11 @@ const DEFAULT_STATE = {
   ownerChatIds: [],
   recentLocations: {},
   lastMonthlyReportSent: {},
+  waterBill: {
+    anchorMonth: '',
+    snoozedMonths: {},
+    lastRemindedDate: {},
+  },
 };
 
 export class StorageService {
@@ -175,6 +180,17 @@ export class StorageService {
         state.lastMonthlyReportSent && typeof state.lastMonthlyReportSent === 'object'
           ? state.lastMonthlyReportSent
           : {},
+      waterBill: {
+        anchorMonth: String(state.waterBill?.anchorMonth || ''),
+        snoozedMonths:
+          state.waterBill?.snoozedMonths && typeof state.waterBill.snoozedMonths === 'object'
+            ? state.waterBill.snoozedMonths
+            : {},
+        lastRemindedDate:
+          state.waterBill?.lastRemindedDate && typeof state.waterBill.lastRemindedDate === 'object'
+            ? state.waterBill.lastRemindedDate
+            : {},
+      },
     };
   }
 
@@ -222,6 +238,46 @@ export class StorageService {
   async wasMonthlyReportSent(monthKey) {
     const state = await this.getState();
     return Boolean(state.lastMonthlyReportSent[monthKey]);
+  }
+
+  async getWaterBillAnchorMonth(fallbackMonth) {
+    const state = await this.getState();
+    return state.waterBill.anchorMonth || fallbackMonth;
+  }
+
+  async setWaterBillAnchorMonth(monthKey) {
+    return this._enqueue(async () => {
+      const state = await this.getState();
+      state.waterBill.anchorMonth = monthKey;
+      await writeJsonFile(this.botStateFile, state);
+      return state.waterBill;
+    });
+  }
+
+  async snoozeWaterBillMonth(monthKey) {
+    return this._enqueue(async () => {
+      const state = await this.getState();
+      state.waterBill.snoozedMonths[monthKey] = true;
+      await writeJsonFile(this.botStateFile, state);
+    });
+  }
+
+  async isWaterBillSnoozed(monthKey) {
+    const state = await this.getState();
+    return Boolean(state.waterBill.snoozedMonths[monthKey]);
+  }
+
+  async markWaterBillReminded(dateKey) {
+    return this._enqueue(async () => {
+      const state = await this.getState();
+      state.waterBill.lastRemindedDate[dateKey] = new Date().toISOString();
+      await writeJsonFile(this.botStateFile, state);
+    });
+  }
+
+  async wasWaterBillRemindedToday(dateKey) {
+    const state = await this.getState();
+    return Boolean(state.waterBill.lastRemindedDate[dateKey]);
   }
 }
 

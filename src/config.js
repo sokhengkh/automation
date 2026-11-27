@@ -54,6 +54,17 @@ export const config = {
     minute: Number(process.env.MONTHLY_REPORT_MINUTE ?? 0),
   },
 
+  reminders: {
+    waterBill: {
+      enabled: String(process.env.WATER_BILL_ENABLED || 'true').toLowerCase() === 'true',
+      anchorMonth: (process.env.WATER_BILL_ANCHOR_MONTH || '2026-12').trim(),
+      startDay: Number(process.env.WATER_BILL_START_DAY ?? 16),
+      endDay: Number(process.env.WATER_BILL_END_DAY ?? 18),
+      hour: Number(process.env.WATER_BILL_REMINDER_HOUR ?? 9),
+      minute: Number(process.env.WATER_BILL_REMINDER_MINUTE ?? 0),
+    },
+  },
+
   paths: {
     dataDir: path.join(ROOT_DIR, 'data'),
     reportsDir: path.join(ROOT_DIR, 'reports'),

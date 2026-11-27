@@ -224,3 +224,16 @@ export function summarizeTransactions(transactions = []) {
     byDate,
   };
 }
+
+export function isWaterBillTransaction(tx) {
+  const text = `${tx?.categories || ''} ${tx?.description || ''} ${tx?.location || ''}`.toLowerCase();
+  if (/ទឹកសុទ្ធ|ផឹក|drinking\s*water|mineral\s*water|ទឹកដោះគោ|ទឹកក្រូច/i.test(text)) {
+    return false;
+  }
+  if (/វិក្កយបត្រទឹក|ថ្លៃទឹក|បង់ទឹក|រដ្ឋាករទឹក|water\s*bill|ppwsa|srwsa|water\s*supply/i.test(text)) {
+    return true;
+  }
+  const isBillCategory = /bills|utilities|ទឹកភ្លើង/i.test(String(tx?.categories || ''));
+  const hasWaterWord = /ទឹក|water/i.test(`${tx?.description || ''} ${tx?.location || ''}`);
+  return isBillCategory && hasWaterWord;
+}
