@@ -284,6 +284,10 @@ test('waterBill: detects bi-monthly days 16-18 window and matches water utility 
 
   assert.equal(getNextWaterBillMonth(new Date('2026-11-27T09:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 18), '2026-12');
   assert.equal(getNextWaterBillMonth(new Date('2026-12-19T09:00:00Z'), 'Asia/Phnom_Penh', '2026-12', 18), '2027-02');
+  assert.equal(getNextWaterBillMonth(new Date('2026-11-27T09:00:00Z'), 'Asia/Phnom_Penh', '2027-01', 18), '2027-01');
+  assert.equal(isWaterBillMonth('2026-12', '2027-01'), false);
+  assert.equal(isWaterBillMonth('2027-01', '2027-01'), true);
+  assert.equal(isWaterBillMonth('2027-03', '2027-01'), true);
 
   assert.equal(isWaterBillTransaction({ description: 'បង់វិក្កយបត្រទឹក PPWSA', categories: 'Bills & Utilities' }), true);
   assert.equal(isWaterBillTransaction({ description: 'ទិញទឹកសុទ្ធ ២ដប', categories: 'Food & Drink' }), false);

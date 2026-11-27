@@ -57,7 +57,7 @@ export const config = {
   reminders: {
     waterBill: {
       enabled: String(process.env.WATER_BILL_ENABLED || 'true').toLowerCase() === 'true',
-      anchorMonth: (process.env.WATER_BILL_ANCHOR_MONTH || '2026-12').trim(),
+      anchorMonth: (process.env.WATER_BILL_ANCHOR_MONTH || '2027-01').trim(),
       startDay: Number(process.env.WATER_BILL_START_DAY ?? 16),
       endDay: Number(process.env.WATER_BILL_END_DAY ?? 18),
       hour: Number(process.env.WATER_BILL_REMINDER_HOUR ?? 9),

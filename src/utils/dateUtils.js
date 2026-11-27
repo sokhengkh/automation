@@ -103,7 +103,7 @@ export function addMonthsToMonthKey(monthKey, deltaMonths) {
   return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
 }
 
-export function isWaterBillMonth(monthKey, anchorMonth = '2026-12') {
+export function isWaterBillMonth(monthKey, anchorMonth = '2027-01') {
   const target = parseMonthKey(monthKey);
   const anchor = parseMonthKey(anchorMonth);
   if (!target || !anchor) return false;
@@ -114,7 +114,7 @@ export function isWaterBillMonth(monthKey, anchorMonth = '2026-12') {
 export function isWaterBillReminderWindow(
   date = new Date(),
   timeZone = 'Asia/Phnom_Penh',
-  anchorMonth = '2026-12',
+  anchorMonth = '2027-01',
   startDay = 16,
   endDay = 18
 ) {
@@ -129,7 +129,7 @@ export function isWaterBillReminderWindow(
 export function getNextWaterBillMonth(
   date = new Date(),
   timeZone = 'Asia/Phnom_Penh',
-  anchorMonth = '2026-12',
+  anchorMonth = '2027-01',
   endDay = 18
 ) {
   const { year, month, day } = getDateParts(date, timeZone);
