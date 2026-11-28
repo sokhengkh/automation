@@ -145,3 +145,53 @@ export function getNextWaterBillMonth(
   }
   return candidate;
 }
+
+export function isMonthlyReportDay(date = new Date(), timeZone = 'Asia/Phnom_Penh', reportDay = 27) {
+  const { year, month, day } = getDateParts(date, timeZone);
+  const lastDay = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate();
+  const targetDay = Math.min(Number(reportDay || 27), lastDay);
+  return Number(day) === targetDay;
+}
+
+export function getCurrentPayCycleKey(
+  date = new Date(),
+  timeZone = 'Asia/Phnom_Penh',
+  cycleStartDay = 28
+) {
+  const { year, month, day } = getDateParts(date, timeZone);
+  const currentMonthKey = `${year}-${month}`;
+  if (Number(day) >= Number(cycleStartDay || 28)) {
+    return addMonthsToMonthKey(currentMonthKey, 1);
+  }
+  return currentMonthKey;
+}
+
+export function getPayCycleRange(cycleMonthKey, cycleStartDay = 28, reportDay = 27) {
+  const endParsed = parseMonthKey(cycleMonthKey);
+  if (!endParsed) return null;
+
+  const prevMonthKey = addMonthsToMonthKey(cycleMonthKey, -1);
+  const startParsed = parseMonthKey(prevMonthKey);
+  const prevLastDay = new Date(Date.UTC(startParsed.year, startParsed.month, 0)).getUTCDate();
+  const currLastDay = new Date(Date.UTC(endParsed.year, endParsed.month, 0)).getUTCDate();
+
+  const startD = String(Math.min(Number(cycleStartDay || 28), prevLastDay)).padStart(2, '0');
+  const endD = String(Math.min(Number(reportDay || 27), currLastDay)).padStart(2, '0');
+
+  const startDate = `${prevMonthKey}-${startD}`;
+  const endDate = `${cycleMonthKey}-${endD}`;
+  return {
+    cycleMonthKey,
+    startDate,
+    endDate,
+    label: `${startDate} → ${endDate}`,
+  };
+}
+
+export function isDateInRange(dateStr, startDate, endDate) {
+  const d = extractDateOnly(dateStr);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  if (startDate && d < startDate) return false;
+  if (endDate && d > endDate) return false;
+  return true;
+}

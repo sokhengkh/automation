@@ -30,7 +30,7 @@ async function fetchStatus() {
   if (!data.ok) return;
 
   if (!el('monthPicker').value) {
-    el('monthPicker').value = data.currentMonth;
+    el('monthPicker').value = data.currentCycle || data.currentMonth;
   }
 
   // Populate category select
@@ -78,7 +78,9 @@ async function fetchStatus() {
 
   const hh = String(data.schedule.hour).padStart(2, '0');
   const mm = String(data.schedule.minute).padStart(2, '0');
-  el('kpiSchedule').textContent = `ចុងខែម៉ោង ${hh}:${mm} (${data.timezone})`;
+  const dayNum = data.schedule.day || 27;
+  const startDay = data.schedule.cycleStartDay || 28;
+  el('kpiSchedule').textContent = `ថ្ងៃទី ${dayNum} ម៉ោង ${hh}:${mm} (វដ្ត ${startDay}→${dayNum})`;
 }
 
 async function fetchTransactions() {
@@ -88,7 +90,7 @@ async function fetchTransactions() {
   const q = el('searchInput').value.trim();
 
   const params = new URLSearchParams();
-  if (month) params.set('month', month);
+  if (month) params.set('cycle', month);
   if (type) params.set('type', type);
   if (currency) params.set('currency', currency);
   if (q) params.set('q', q);

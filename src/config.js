@@ -50,6 +50,8 @@ export const config = {
   },
 
   schedule: {
+    day: Number(process.env.MONTHLY_REPORT_DAY ?? 27),
+    cycleStartDay: Number(process.env.MONTHLY_REPORT_CYCLE_START_DAY ?? 28),
     hour: Number(process.env.MONTHLY_REPORT_HOUR ?? 16),
     minute: Number(process.env.MONTHLY_REPORT_MINUTE ?? 0),
   },

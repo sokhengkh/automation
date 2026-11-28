@@ -10,7 +10,13 @@ import { schedulerService } from './services/schedulerService.js';
 import { sheetsService } from './services/sheetsService.js';
 import { storageService } from './services/storageService.js';
 import { telegramService } from './services/telegramService.js';
-import { getCurrentMonthKey } from './utils/dateUtils.js';
+import {
+  formatMonthLabelKhmer,
+  getCurrentMonthKey,
+  getCurrentPayCycleKey,
+  getPayCycleRange,
+  isDateInRange,
+} from './utils/dateUtils.js';
 import { STANDARD_CATEGORIES, summarizeTransactions } from './utils/financeUtils.js';
 
 export function createApp() {
@@ -29,10 +35,23 @@ export function createApp() {
       const pendingSyncCount = all.filter((tx) => !tx.syncedToSheet).length;
       const sheetMode = await sheetsService.getMode();
 
+      const currentCycle = getCurrentPayCycleKey(
+        new Date(),
+        config.timezone,
+        config.schedule.cycleStartDay
+      );
+      const cycleRange = getPayCycleRange(
+        currentCycle,
+        config.schedule.cycleStartDay,
+        config.schedule.day
+      );
+
       res.json({
         ok: true,
         timezone: config.timezone,
         currentMonth: getCurrentMonthKey(config.timezone),
+        currentCycle,
+        cycleRange,
         categories: STANDARD_CATEGORIES,
         telegram: {
           configured: telegramService.isConfigured(),
@@ -59,6 +78,8 @@ export function createApp() {
           pendingSyncCount,
         },
         schedule: {
+          day: config.schedule.day,
+          cycleStartDay: config.schedule.cycleStartDay,
           hour: config.schedule.hour,
           minute: config.schedule.minute,
         },
@@ -102,16 +123,35 @@ export function createApp() {
 
   app.get('/api/transactions', async (req, res) => {
     try {
+      const cycle = String(req.query.cycle || '').trim();
       const month = String(req.query.month || '').trim();
       const type = String(req.query.type || '').trim();
       const currency = String(req.query.currency || '').trim();
       const q = String(req.query.q || '').trim().toLowerCase();
       const source = String(req.query.source || 'auto').trim();
 
+      const range = cycle
+        ? getPayCycleRange(cycle, config.schedule.cycleStartDay, config.schedule.day)
+        : null;
+
       let transactions;
       let dataSource = 'local_cache';
 
-      if (source === 'sheet') {
+      if (range) {
+        if (source === 'sheet') {
+          const sheetData = await sheetsService.getTransactionsForDateRange(range.startDate, range.endDate);
+          transactions = sheetData.transactions;
+          dataSource = sheetData.source;
+        } else {
+          const allLocal = await storageService.getAllTransactions();
+          transactions = allLocal.filter((tx) => isDateInRange(tx.date, range.startDate, range.endDate));
+          if (source === 'auto' && transactions.length === 0 && (await sheetsService.getMode()) !== 'local_only') {
+            const sheetData = await sheetsService.getTransactionsForDateRange(range.startDate, range.endDate);
+            transactions = sheetData.transactions;
+            dataSource = sheetData.source;
+          }
+        }
+      } else if (source === 'sheet') {
         const sheetData = await sheetsService.getTransactionsForMonth(month);
         transactions = sheetData.transactions;
         dataSource = sheetData.source;
@@ -253,10 +293,24 @@ export function createApp() {
 
   app.get('/api/report/excel', async (req, res) => {
     try {
-      const monthKey = String(req.query.month || '').trim() || getCurrentMonthKey(config.timezone);
-      const { transactions } = await sheetsService.getTransactionsForMonth(monthKey);
+      const monthKey =
+        String(req.query.month || '').trim() ||
+        getCurrentPayCycleKey(new Date(), config.timezone, config.schedule.cycleStartDay);
+      const range = getPayCycleRange(
+        monthKey,
+        config.schedule.cycleStartDay,
+        config.schedule.day
+      );
+      const { transactions } = range
+        ? await sheetsService.getTransactionsForDateRange(range.startDate, range.endDate)
+        : await sheetsService.getTransactionsForMonth(monthKey);
+      const periodLabel = range
+        ? `${formatMonthLabelKhmer(monthKey)} [${range.startDate} → ${range.endDate}]`
+        : formatMonthLabelKhmer(monthKey);
+
       const { buffer, filename } = await buildMonthlyExcelBuffer(transactions, {
         monthKey,
+        periodLabel,
         timezone: config.timezone,
       });
 
@@ -273,7 +327,9 @@ export function createApp() {
 
   app.post('/api/report/send-telegram', async (req, res) => {
     try {
-      const monthKey = String(req.body?.month || '').trim() || getCurrentMonthKey(config.timezone);
+      const monthKey =
+        String(req.body?.month || '').trim() ||
+        getCurrentPayCycleKey(new Date(), config.timezone, config.schedule.cycleStartDay);
       const chatIds = req.body?.chatId
         ? [String(req.body.chatId)]
         : await telegramService.getTargetReportChatIds();

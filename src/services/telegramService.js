@@ -2,7 +2,9 @@ import { config } from '../config.js';
 import {
   formatMonthLabelKhmer,
   getCurrentMonthKey,
+  getCurrentPayCycleKey,
   getNextWaterBillMonth,
+  getPayCycleRange,
   getTodayDateString,
   parseMonthKey,
 } from '../utils/dateUtils.js';
@@ -152,15 +154,32 @@ export class TelegramService {
     return state.ownerChatIds;
   }
 
-  async sendMonthlyReportToChat(chatId, monthKey = getCurrentMonthKey(config.timezone)) {
-    const { transactions, source } = await sheetsService.getTransactionsForMonth(monthKey);
+  async sendMonthlyReportToChat(
+    chatId,
+    monthKey = getCurrentPayCycleKey(new Date(), config.timezone, config.schedule.cycleStartDay)
+  ) {
+    const range = getPayCycleRange(
+      monthKey,
+      config.schedule.cycleStartDay,
+      config.schedule.day
+    );
+    const { transactions, source } = range
+      ? await sheetsService.getTransactionsForDateRange(range.startDate, range.endDate)
+      : await sheetsService.getTransactionsForMonth(monthKey);
+
+    const periodLabel = range
+      ? `${formatMonthLabelKhmer(monthKey)} [${range.startDate} → ${range.endDate}]`
+      : formatMonthLabelKhmer(monthKey);
+
     const { buffer, summary, filename } = await buildMonthlyExcelBuffer(transactions, {
       monthKey,
+      periodLabel,
       timezone: config.timezone,
     });
 
     const caption = [
       `📊 <b>របាយការណ៍ចំណូល-ចំណាយប្រចាំខែ ${escapeHtml(formatMonthLabelKhmer(monthKey))}</b>`,
+      range ? `📅 វដ្ត: <b>${escapeHtml(range.startDate)}</b> ដល់ <b>${escapeHtml(range.endDate)}</b>` : null,
       `- ប្រតិបត្តិការសរុប: <b>${summary.count}</b>`,
       `- ចំណូល USD: <b>${escapeHtml(formatMoney(summary.totals.USD.income, '$'))}</b> | ចំណាយ: <b>${escapeHtml(formatMoney(summary.totals.USD.expense, '$'))}</b>`,
       `- សមតុល្យ USD: <b>${escapeHtml(formatMoney(summary.totals.USD.net, '$'))}</b>`,
@@ -168,7 +187,9 @@ export class TelegramService {
       `- សមតុល្យ KHR: <b>${escapeHtml(formatMoney(summary.totals.KHR.net, '៛'))}</b>`,
       `📁 មាន ២ Sheets: <i>Summary (សរុប)</i> និង <i>Transactions (លម្អិត)</i>`,
       `<i>ប្រភពទិន្នន័យ: ${escapeHtml(source)}</i>`,
-    ].join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     await this.sendDocument(chatId, buffer, filename, caption);
     return { filename, count: summary.count, summary };
@@ -254,9 +275,9 @@ export class TelegramService {
         `4️⃣ <b>ទីតាំង (Location):</b> AI ចាប់យកឈ្មោះហាង អ្នកទទួល ឬទីកន្លែងដោយស្វ័យប្រវត្តិពីសារ សំឡេង និងវិក្កយបត្រ`,
         ``,
         `<b>ពាក្យបញ្ជាសំខាន់ៗ:</b>`,
-        `- /summary : មើលសង្ខេបថ្ងៃនេះ និងខែនេះ`,
-        `- /report : ទាញយក File Excel (សរុប + លម្អិត) ខែនេះភ្លាមៗ`,
-        `- /report 2026-11 : ទាញយក Excel តាមខែជាក់លាក់`,
+        `- /summary : មើលសង្ខេបថ្ងៃនេះ និងវដ្តប្រាក់ខែ (${config.schedule.cycleStartDay}→${config.schedule.day})`,
+        `- /report : ទាញយក File Excel វដ្តប្រាក់ខែបច្ចុប្បន្ន (${config.schedule.cycleStartDay}→${config.schedule.day})`,
+        `- /report 2026-12 : ទាញយក Excel វដ្តជាក់លាក់ (2026-11-28 → 2026-12-27)`,
         `- /undo : លុបកំណត់ត្រាចុងក្រោយ`,
         `- /sync : រុញទិន្នន័យដែលមិនទាន់ចូល Google Sheet`,
         `- /waterbill : កំណត់ និងមើលការរំលឹកវិក្កយបត្រទឹក (២ ខែម្តង ថ្ងៃ 16-18)`,
@@ -287,9 +308,17 @@ export class TelegramService {
     }
 
     if (cmd === '/summary' || cmd === '/today') {
-      const monthKey = getCurrentMonthKey(config.timezone);
+      const cycleKey = getCurrentPayCycleKey(
+        new Date(),
+        config.timezone,
+        config.schedule.cycleStartDay
+      );
+      const range = getPayCycleRange(cycleKey, config.schedule.cycleStartDay, config.schedule.day);
       const todayKey = getTodayDateString(config.timezone);
-      const { transactions } = await sheetsService.getTransactionsForMonth(monthKey);
+      const { transactions } = await sheetsService.getTransactionsForDateRange(
+        range.startDate,
+        range.endDate
+      );
       const monthSum = summarizeTransactions(transactions);
       const todayTxs = transactions.filter((t) => String(t.date || '').startsWith(todayKey));
       const todaySum = summarizeTransactions(todayTxs);
@@ -301,7 +330,7 @@ export class TelegramService {
         `- USD ($): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.USD.expense, '$'))}</b>`,
         `- KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(todaySum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(todaySum.totals.KHR.expense, '៛'))}</b>`,
         ``,
-        `<b>🗓 ខែនេះ (${escapeHtml(monthKey)}) (${monthSum.count} ប្រតិបត្តិការ):</b>`,
+        `<b>🗓 វដ្តប្រាក់ខែ (${escapeHtml(range.startDate)} → ${escapeHtml(range.endDate)}) (${monthSum.count} ប្រតិបត្តិការ):</b>`,
         `- USD ($): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.USD.income, '$'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.USD.expense, '$'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.USD.net, '$'))}</b>`,
         `- KHR (៛): ចំណូល <b>${escapeHtml(formatMoney(monthSum.totals.KHR.income, '៛'))}</b> | ចំណាយ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.expense, '៛'))}</b> | សល់ <b>${escapeHtml(formatMoney(monthSum.totals.KHR.net, '៛'))}</b>`,
       ].join('\n');
@@ -314,7 +343,7 @@ export class TelegramService {
       await this.sendChatAction(chatId, 'upload_document');
       const monthKey = /^\d{4}-\d{2}$/.test(argRaw || '')
         ? argRaw
-        : getCurrentMonthKey(config.timezone);
+        : getCurrentPayCycleKey(new Date(), config.timezone, config.schedule.cycleStartDay);
       await this.sendMonthlyReportToChat(chatId, monthKey);
       return;
     }

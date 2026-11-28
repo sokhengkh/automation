@@ -1,8 +1,8 @@
 import cron from 'node-cron';
 import { config } from '../config.js';
 import {
-  getCurrentMonthKey,
-  isLastDayOfMonth,
+  getCurrentPayCycleKey,
+  isMonthlyReportDay,
   isWaterBillReminderWindow,
 } from '../utils/dateUtils.js';
 import { isWaterBillTransaction } from '../utils/financeUtils.js';
@@ -18,10 +18,14 @@ export class SchedulerService {
 
   async runMonthlyCheck({ force = false, monthKey = null } = {}) {
     const now = new Date();
-    const targetMonth = monthKey || getCurrentMonthKey(config.timezone, now);
+    const targetMonth =
+      monthKey || getCurrentPayCycleKey(now, config.timezone, config.schedule.cycleStartDay);
 
-    if (!force && !isLastDayOfMonth(now, config.timezone)) {
-      return { skipped: true, reason: 'Not last day of month' };
+    if (!force && !isMonthlyReportDay(now, config.timezone, config.schedule.day)) {
+      return {
+        skipped: true,
+        reason: `Not monthly report day (day ${config.schedule.day})`,
+      };
     }
 
     if (!force && (await storageService.wasMonthlyReportSent(targetMonth))) {
@@ -132,7 +136,7 @@ export class SchedulerService {
     }
 
     console.log(
-      `[Scheduler] End-of-month afternoon check armed: ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} (${config.timezone})`
+      `[Scheduler] Monthly payday-cycle report check armed: day ${config.schedule.day} at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} (${config.timezone}, cycle ${config.schedule.cycleStartDay}->${config.schedule.day})`
     );
   }
 

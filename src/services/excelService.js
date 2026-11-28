@@ -118,14 +118,18 @@ function addBreakdownTable(sheet, startRow, title, rows, firstColHeader, keyFiel
   return r + 1;
 }
 
-export async function buildMonthlyExcelBuffer(transactions, { monthKey, timezone = config.timezone } = {}) {
+export async function buildMonthlyExcelBuffer(
+  transactions,
+  { monthKey, periodLabel = '', timezone = config.timezone } = {}
+) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Telegram Finance AI Assistant';
   workbook.created = new Date();
 
   const sorted = [...transactions].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
   const summary = summarizeTransactions(sorted);
-  const monthLabel = monthKey ? formatMonthLabelKhmer(monthKey) : 'All Time (ទិន្នន័យទាំងអស់)';
+  const monthLabel =
+    periodLabel || (monthKey ? formatMonthLabelKhmer(monthKey) : 'All Time (ទិន្នន័យទាំងអស់)');
 
   // ========================
   // SHEET 1: Summary (សរុប)

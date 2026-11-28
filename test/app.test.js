@@ -8,8 +8,12 @@ import ExcelJS from 'exceljs';
 import {
   extractMonthKey,
   formatMonthLabelKhmer,
+  getCurrentPayCycleKey,
   getNextWaterBillMonth,
+  getPayCycleRange,
+  isDateInRange,
   isLastDayOfMonth,
+  isMonthlyReportDay,
   isWaterBillMonth,
   isWaterBillReminderWindow,
 } from '../src/utils/dateUtils.js';
@@ -291,4 +295,27 @@ test('waterBill: detects bi-monthly days 16-18 window and matches water utility 
 
   assert.equal(isWaterBillTransaction({ description: 'បង់វិក្កយបត្រទឹក PPWSA', categories: 'Bills & Utilities' }), true);
   assert.equal(isWaterBillTransaction({ description: 'ទិញទឹកសុទ្ធ ២ដប', categories: 'Food & Drink' }), false);
+});
+
+test('paydayCycle: sends on day 27 and aggregates 28th prev month through 27th current month', () => {
+  assert.equal(isMonthlyReportDay(new Date('2026-12-27T09:00:00Z'), 'Asia/Phnom_Penh', 27), true);
+  assert.equal(isMonthlyReportDay(new Date('2026-12-28T09:00:00Z'), 'Asia/Phnom_Penh', 27), false);
+
+  // On Nov 28 (payday!), transactions belong to the Dec cycle (2026-11-28 -> 2026-12-27)
+  assert.equal(getCurrentPayCycleKey(new Date('2026-11-28T09:00:00Z'), 'Asia/Phnom_Penh', 28), '2026-12');
+  assert.equal(getCurrentPayCycleKey(new Date('2026-12-27T09:00:00Z'), 'Asia/Phnom_Penh', 28), '2026-12');
+  assert.equal(getCurrentPayCycleKey(new Date('2026-12-28T09:00:00Z'), 'Asia/Phnom_Penh', 28), '2027-01');
+
+  const decRange = getPayCycleRange('2026-12', 28, 27);
+  assert.equal(decRange.startDate, '2026-11-28');
+  assert.equal(decRange.endDate, '2026-12-27');
+
+  const janRange = getPayCycleRange('2027-01', 28, 27);
+  assert.equal(janRange.startDate, '2026-12-28');
+  assert.equal(janRange.endDate, '2027-01-27');
+
+  assert.equal(isDateInRange('2026-11-28 08:00', decRange.startDate, decRange.endDate), true);
+  assert.equal(isDateInRange('2026-12-27 15:59', decRange.startDate, decRange.endDate), true);
+  assert.equal(isDateInRange('2026-11-27 23:59', decRange.startDate, decRange.endDate), false);
+  assert.equal(isDateInRange('2026-12-28 08:00', decRange.startDate, decRange.endDate), false);
 });

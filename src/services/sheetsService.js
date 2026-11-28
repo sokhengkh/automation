@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import { google } from 'googleapis';
 import { config } from '../config.js';
-import { extractMonthKey } from '../utils/dateUtils.js';
+import { extractMonthKey, isDateInRange } from '../utils/dateUtils.js';
 import { fromSheetRow, SHEET_HEADERS, toSheetRow } from '../utils/financeUtils.js';
 import { storageService } from './storageService.js';
 
@@ -174,6 +174,44 @@ export class SheetsService {
 
     const localRows = await storageService.getTransactionsByMonth(monthKey);
     return { transactions: localRows, source: 'local_cache' };
+  }
+
+  async getTransactionsForDateRange(startDate, endDate) {
+    const mode = await this.getMode();
+
+    if (mode === 'apps_script') {
+      try {
+        const res = await this._callAppsScript({ action: 'list', month: '' });
+        const allRows = (res.rows || []).map((r, idx) => fromSheetRow(r, idx));
+        const filtered = allRows.filter((tx) => isDateInRange(tx.date, startDate, endDate));
+        if (allRows.length > 0) {
+          return { transactions: filtered, source: 'google_sheet_apps_script' };
+        }
+      } catch (err) {
+        console.warn('[SheetsService] Failed reading range from Apps Script, falling back to local cache:', err.message);
+      }
+    } else if (mode === 'service_account') {
+      try {
+        const sheets = await this._getGoogleSheetsClient();
+        const res = await sheets.spreadsheets.values.get({
+          spreadsheetId: config.googleSheet.sheetId,
+          range: `${config.googleSheet.tabName}!A2:H`,
+        });
+        const allRows = (res.data.values || []).map((r, idx) => fromSheetRow(r, idx));
+        const filtered = allRows.filter((tx) => isDateInRange(tx.date, startDate, endDate));
+        if (allRows.length > 0) {
+          return { transactions: filtered, source: 'google_sheet_api' };
+        }
+      } catch (err) {
+        console.warn('[SheetsService] Failed reading range from Google Sheets API, falling back to local cache:', err.message);
+      }
+    }
+
+    const allLocal = await storageService.getAllTransactions();
+    return {
+      transactions: allLocal.filter((tx) => isDateInRange(tx.date, startDate, endDate)),
+      source: 'local_cache',
+    };
   }
 
   async testConnection() {

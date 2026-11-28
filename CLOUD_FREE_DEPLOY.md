@@ -51,10 +51,10 @@ Render Free នឹង Sleep បើគ្មានចរាចរណ៍ 15 នា
 2. បង្កើត **Cronjob ទី ១ (Keep Awake — កុំឱ្យ Bot យឺតពេលថ្ងៃ)៖**
    - **URL:** `https://YOUR-APP.onrender.com/api/health`
    - **Schedule:** រៀងរាល់ **14 នាទីម្តង** (ចន្លោះម៉ោង 06:00 ដល់ 23:00 ដើម្បីសន្សំម៉ោងក្រោម 750h/ខែ)
-3. បង្កើត **Cronjob ទី ២ (ផ្ញើ Excel ប្រចាំខែពេលរសៀល)៖**
+3. បង្កើត **Cronjob ទី ២ (ផ្ញើ Excel ប្រចាំខែថ្ងៃទី 27 ម៉ោង 16:00)៖**
    - **URL:** `https://YOUR-APP.onrender.com/api/cron/monthly-report?secret=kh_finance_bot_secret_2026`
    - **Schedule:** រៀងរាល់ថ្ងៃ ម៉ោង **16:00** (`Asia/Phnom_Penh`)
-   - *(ប្រព័ន្ធនឹងឆែកដោយស្វ័យប្រវត្តិ៖ ផ្ញើតែនៅថ្ងៃចុងខែ និងផ្ញើតែ ១ ដងប៉ុណ្ណោះក្នុង ១ ខែ!)*
+   - *(ប្រព័ន្ធនឹងឆែកដោយស្វ័យប្រវត្តិ៖ ផ្ញើតែនៅថ្ងៃទី 27 (បូកសរុបវដ្តថ្ងៃ 28 ខែមុន → 27 ខែនេះ) និងផ្ញើតែ ១ ដងប៉ុណ្ណោះក្នុង ១ ខែ!)*
 4. បង្កើត **Cronjob ទី ៣ (រំលឹកបង់វិក្កយបត្រទឹក ២ ខែម្តង ថ្ងៃ 16-18)៖**
    - **URL:** `https://YOUR-APP.onrender.com/api/cron/reminders?secret=kh_finance_bot_secret_2026`
    - **Schedule:** រៀងរាល់ថ្ងៃ ម៉ោង **09:00** (`Asia/Phnom_Penh`)
